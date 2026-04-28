@@ -20,6 +20,7 @@ use tracing::{info, warn};
 const BOOTSTRAP_LIMIT: u32 = 220;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct RawKline(
     i64,    // 0  open_time ms
     String, // 1  open

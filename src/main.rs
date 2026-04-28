@@ -17,8 +17,9 @@ use crypto_scalper::{
     config::Config,
     data::Timeframe,
     execution::risk::RiskLimits,
+    agents::messages::ControlCommand,
     execution::{
-        binance::BinanceFutures, position::Position as PositionRecord, Exchange, PaperExchange,
+        binance::BinanceFutures, position::Position, Exchange, PaperExchange,
         PositionBook, RiskManager,
     },
     feeds::{
@@ -346,9 +347,9 @@ async fn run_agents(cfg: Config) -> Result<()> {
     if cfg.mode.run_mode == "live" {
         match exchange.fetch_open_positions(&cfg.pairs.symbols).await {
             Ok(snaps) if !snaps.is_empty() => {
-                let mut recon: Vec<crate::execution::Position> = Vec::new();
+                let mut recon: Vec<Position> = Vec::new();
                 for s in &snaps {
-                    let pos = crate::execution::Position {
+                    let pos = Position {
                         client_id: format!("recon-{}-{}", s.symbol, s.side.as_str()),
                         symbol: s.symbol.clone(),
                         side: s.side,
@@ -455,9 +456,9 @@ async fn run_agents(cfg: Config) -> Result<()> {
         match exchange.fetch_open_positions(&cfg.pairs.symbols).await {
             Ok(positions) => {
                 let now = chrono::Utc::now();
-                let recovered: Vec<PositionRecord> = positions
+                let recovered: Vec<Position> = positions
                     .into_iter()
-                    .map(|p| PositionRecord {
+                    .map(|p| Position {
                         client_id: format!("recovered-{}-{}", p.symbol, now.timestamp_millis()),
                         symbol: p.symbol,
                         side: p.side,
@@ -560,7 +561,7 @@ async fn run_agents(cfg: Config) -> Result<()> {
                 tokio::time::sleep(std::time::Duration::from_secs(secs)).await;
                 risk_reset.reset_daily();
                 bus_reset.publish(AgentEvent::ControlCommand(
-                    crate::agents::messages::ControlCommand::ResetDaily,
+                    ControlCommand::ResetDaily,
                 ));
                 tracing::info!("midnight UTC: daily risk counters reset");
             }
