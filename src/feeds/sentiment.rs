@@ -130,8 +130,11 @@ fn normalized_sentiment(d: &Value) -> f64 {
             value.clamp(-1.0, 1.0)
         };
     }
-    if let Some(value) = first_f64(d, &["sentiment_score", "alt_rank_30d"]) {
+    if let Some(value) = first_f64(d, &["sentiment_score"]) {
         return (value / 50.0 - 1.0).clamp(-1.0, 1.0);
+    }
+    if let Some(rank) = first_f64(d, &["alt_rank_30d"]) {
+        return ((100.0 - rank.clamp(1.0, 200.0)) / 100.0).clamp(-1.0, 1.0);
     }
     0.0
 }
@@ -188,5 +191,13 @@ mod tests {
         assert_eq!(snap.galaxy_score, Some(72.0));
         assert_eq!(snap.sentiment, 0.5);
         assert_eq!(snap.top_keywords, vec!["etf", "btc"]);
+    }
+
+    #[test]
+    fn alt_rank_sentiment_is_not_inverted() {
+        let strong = parse_lunarcrush_snapshot("BTCUSDT", &json!({"data": {"alt_rank_30d": 1}}));
+        let weak = parse_lunarcrush_snapshot("BTCUSDT", &json!({"data": {"alt_rank_30d": 150}}));
+        assert!(strong.sentiment > 0.0);
+        assert!(weak.sentiment < 0.0);
     }
 }
